@@ -1,97 +1,341 @@
 <!DOCTYPE html>
-<html lang="en-us">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Unity WebGL Player | webar</title>
-    <meta name="description" content="">
-    <link rel="shortcut icon" href="TemplateData/favicon.ico">
-    <link rel="stylesheet" href="TemplateData/style.css">
-  </head>
-  <body>
-    <div id="unity-container">
-      <div id="unity-canvas-container" style="width: 100%; height: 100%;">
-        <canvas id="unity-canvas" style="width: 100%; height: 100%;"></canvas>
-      </div>
-      <div id="unity-loading-bar">
-        <div id="unity-logo"></div>
-        <div id="unity-progress-bar-empty">
-          <div id="unity-progress-bar-full"></div>
-        </div>
-      </div>
-      <div id="unity-footer">
-        <div id="unity-webgl-logo"></div>
-        <button id="enterar" value="Enter AR" disabled>AR</button>
-        <div id="unity-build-title">webar</div>
-      </div>
-    </div>
-    <script>
-      var buildUrl = "Build";
-      var loaderUrl = buildUrl + "/aroutput.loader.js";
-      var config = {
-        dataUrl: buildUrl + "/aroutput.data",
-        frameworkUrl: buildUrl + "/aroutput.framework.js",
-        codeUrl: buildUrl + "/aroutput.wasm",
-        streamingAssetsUrl: "StreamingAssets",
-        companyName: "DefaultCompany",
-        productName: "webar",
-        productVersion: "0.1",
-      };
+<html lang="en">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 
-      var container = document.querySelector("#unity-container");
-      var canvas = document.querySelector("#unity-canvas");
-      var canvasContainer = document.querySelector("#unity-canvas-container");
-      var loadingBar = document.querySelector("#unity-loading-bar");
-      var progressBarFull = document.querySelector("#unity-progress-bar-full");
-      var fullscreenButton = document.querySelector("#unity-fullscreen-button");
-      var unityInstance = null;
-      
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Framework</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+    <style>
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+        }
 
-      loadingBar.style.display = "block";
+        #root {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
 
-      var script = document.createElement("script");
-      script.src = loaderUrl;
-      script.onload = () => {
-        createUnityInstance(canvas, config, (progress) => {
-          progressBarFull.style.width = 100 * progress + "%";
-        }).then((instance) => {
-          unityInstance = instance;
-          loadingBar.style.display = "none";
-		  if(!enterARButton.disabled){
-			unityInstance.Module.WebXR.toggleAR();
-		  }
-          if (fullscreenButton)
-          {
-            fullscreenButton.onclick = () => {
-              unityInstance.SetFullscreen(1);
+        .game-container {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .drag-zone {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            background: linear-gradient(to bottom, rgba(0, 0, 0, 0.1), transparent);
+            z-index: 10;
+            cursor: ns-resize;
+            transition: height 0.2s, background 0.2s;
+        }
+
+        .dragging .drag-zone {
+            height: 100vh;
+            background: transparent;
+        }
+
+        .game-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+            z-index: 5;
+        }
+
+        .pulling-indicator {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #666;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 11;
+        }
+
+        .pulling .pulling-indicator {
+            opacity: 1;
+        }
+
+        .sliding-out {
+            transition: transform 0.5s ease;
+            transform: translateY(100%);
+        }
+
+        .fullscreen-button {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            z-index: 12;
+            background: rgba(255, 255, 255, 0.8);
+            border: none;
+            border-radius: 5px;
+            padding: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .fullscreen-button:hover {
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .fullscreen-icon {
+            width: 20px;
+            height: 20px;
+            fill: #444;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const GameFramework = () => {
+            const [startY, setStartY] = React.useState(null);
+            const [pulling, setPulling] = React.useState(false);
+            const [isDragging, setIsDragging] = React.useState(false);
+            const [currentGame, setCurrentGame] = React.useState(0);
+            const [transform, setTransform] = React.useState('translateY(0)');
+            const [games, setGames] = React.useState([]);
+            const [slidingOut, setSlidingOut] = React.useState(false);
+            const [shuffleTimestamp, setShuffleTimestamp] = React.useState(Date.now());
+            const [isFullscreen, setIsFullscreen] = React.useState(false);
+            // New state for recently played games queue
+            const [recentGames, setRecentGames] = React.useState([]);
+            const QUEUE_SIZE = 10; // Adjust this number to change how many recent games to remember
+
+            React.useEffect(() => {
+                const urlParams = new URLSearchParams(window.location.search);
+                const gameIndex = urlParams.get('game');
+
+                fetch('/api/games?t=' + Date.now())
+                    .then((response) => response.json())
+                    .then((data) => {
+                        console.error('Game Length:', data.length);
+                        
+                        // Set initial game based on URL parameter or random
+                        let initialGame;
+                        if (gameIndex !== null) {
+                            // Convert to number and validate
+                            initialGame = parseInt(gameIndex, 10);
+                            if (isNaN(initialGame) || initialGame < 0 || initialGame >= data.length) {
+                                initialGame = Math.floor(Math.random() * data.length);
+                            }
+                        } else {
+                            initialGame = Math.floor(Math.random() * data.length);
+                        }
+                        
+                        setCurrentGame(initialGame);
+                        setRecentGames([initialGame]);
+                        setGames(data);
+                    })
+                    .catch((error) => console.error('Error fetching games:', error));
+
+                const handleFullscreenChange = () => {
+                    setIsFullscreen(!!document.fullscreenElement);
+                };
+                document.addEventListener('fullscreenchange', handleFullscreenChange);
+                document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+
+                return () => {
+                    document.removeEventListener('fullscreenchange', handleFullscreenChange);
+                    document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+                };
+            }, []);
+
+            const getNextGame = () => {
+                if (games.length <= QUEUE_SIZE) {
+                    // If we have fewer games than queue size, just pick randomly
+                    let newGame;
+                    do {
+                        newGame = Math.floor(Math.random() * games.length);
+                    } while (newGame === currentGame);
+                    return newGame;
+                }
+
+                // Get a random game that's not in the recent games queue
+                let newGame;
+                do {
+                    newGame = Math.floor(Math.random() * games.length);
+                } while (recentGames.includes(newGame));
+
+                // Update recent games queue
+                const updatedQueue = [...recentGames, newGame];
+                if (updatedQueue.length > QUEUE_SIZE) {
+                    updatedQueue.shift(); // Remove oldest game if queue is full
+                }
+                setRecentGames(updatedQueue);
+
+                return newGame;
             };
-          }
-        }).catch((message) => {
-          alert(message);
-        });
-      };
-      document.body.appendChild(script);
 
-      let enterARButton = document.getElementById('enterar');
-      //let enterVRButton = document.getElementById('entervr');
+            // Update URL when game changes
+            /*React.useEffect(() => {
+                const newUrl = new URL(window.location);
+                newUrl.searchParams.set('game', currentGame);
+                window.history.replaceState({}, '', newUrl);
+            }, [currentGame]);*/
 
-      document.addEventListener('onARSupportedCheck', function (event) {
-        enterARButton.disabled = !event.detail.supported;
-		if(event.detail.supported && unityInstance != null){
-			unityInstance.Module.WebXR.toggleAR();
-		}
-      }, false);
-      /*document.addEventListener('onVRSupportedCheck', function (event) {
-        enterVRButton.disabled = !event.detail.supported;
-      }, false);*/
+            const toggleFullscreen = () => {
+                const rootElement = document.documentElement;
+                if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                    if (rootElement.requestFullscreen) {
+                        rootElement.requestFullscreen();
+                    } else if (rootElement.webkitRequestFullscreen) {
+                        rootElement.webkitRequestFullscreen();
+                    }
+                } else {
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen();
+                    } else if (document.webkitExitFullscreen) {
+                        document.webkitExitFullscreen();
+                    }
+                }
+            };
 
-      enterARButton.addEventListener('click', function (event) {
-        unityInstance.Module.WebXR.toggleAR();
-      }, false);
-      /*enterVRButton.addEventListener('click', function (event) {
-        unityInstance.Module.WebXR.toggleVR();
-      }, false);*/
+            const handleStart = (y) => {
+                if (window.scrollY === 0) {
+                    setStartY(y);
+                    setIsDragging(true);
+                }
+            };
+
+            const handleMove = (y) => {
+                if (startY !== null) {
+                    const diff = y - startY;
+
+                    if (diff > 100) {
+                        setPulling(true);
+                    } else {
+                        setPulling(false);
+                    }
+
+                    if (diff > 0) {
+                        setTransform(`translateY(${diff}px)`);
+                        return true;
+                    }
+                }
+                return false;
+            };
+
+            const handleEnd = () => {
+                if (pulling && games.length > 0) {
+                    setSlidingOut(true);
+                    setTimeout(() => {
+                        const newGame = getNextGame();
+                        setShuffleTimestamp(Date.now());
+                        setCurrentGame(newGame);
+                    }, 400);
+
+                    setTimeout(() => {
+                        setSlidingOut(false);
+                        setTransform('translateY(0)');
+                    }, 500);
+                }
+
+                setStartY(null);
+                setPulling(false);
+                setIsDragging(false);
+                setTransform('');
+            };
+
+            const handleTouchStart = (e) => {
+                handleStart(e.touches[0].clientY);
+            };
+
+            const handleTouchMove = (e) => {
+                if (handleMove(e.touches[0].clientY)) {
+                    e.preventDefault();
+                }
+            };
+
+            const handleMouseDown = (e) => {
+                handleStart(e.clientY);
+            };
+
+            const handleMouseMove = (e) => {
+                if (startY !== null && handleMove(e.clientY)) {
+                    e.preventDefault();
+                }
+            };
+
+            if (games.length === 0) {
+                return <div>Loading games...</div>;
+            }
+
+            return (
+                <div className='game-container'>
+                    <button
+                        className="fullscreen-button"
+                        onClick={toggleFullscreen}
+                        aria-label="Toggle fullscreen"
+                    >
+                        <svg className="fullscreen-icon" viewBox="0 0 24 24">
+                            {isFullscreen ? (
+                                <path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z" />
+                            ) : (
+                                <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z" />
+                            )}
+                        </svg>
+                    </button>
+                    <div
+                        className={`game-container ${pulling ? 'pulling' : ''} ${isDragging ? 'dragging' : ''} ${slidingOut ? 'sliding-out' : ''}`}
+                        style={{ transform }}
+                    >
+                        <div
+                            className="drag-zone"
+                            onTouchStart={handleTouchStart}
+                            onTouchMove={handleTouchMove}
+                            onTouchEnd={handleEnd}
+                            onMouseDown={handleMouseDown}
+                            onMouseMove={handleMouseMove}
+                            onMouseUp={handleEnd}
+                            onMouseLeave={handleEnd}
+                        >
+                            <div className="pulling-indicator">
+                                Pull to shuffle ↓
+                            </div>
+                        </div>
+                        <iframe
+                            src={`${games[currentGame].path}?t=${shuffleTimestamp}`}
+                            className="game-frame"
+                            title={`Game ${currentGame + 1}`}
+                        />
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<GameFramework />);
     </script>
-  </body>
+</body>
+
 </html>

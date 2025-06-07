@@ -1,0 +1,23 @@
+[
+	{
+        "path": "games/StoryBook/index.html"
+    },
+    {
+        "path": "games/Tetris/index.html"
+    },
+    {
+        "path": "games/SolarSys/index.html"
+    },
+    {
+        "path": "games/Spaceshoot/index.html"
+    },
+    {
+        "path": "games/TowerBuilding/index.html"
+    },
+    {
+        "path": "games/TowerDefense/index.html"
+    },
+    {
+        "path": "games/Unity/ARTest/index.html"
+    }
+]
