@@ -1,6 +1,0 @@
-{
-  "name": "3D Tower Defense Titans",
-  "description": "A 3D tower defense game built with React, Three.js, and Tailwind CSS. Place towers to defend against waves of enemies.",
-  "requestFramePermissions": [],
-  "prompt": ""
-}

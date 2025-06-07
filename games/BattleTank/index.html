@@ -32,6 +32,8 @@
       scrollbar-color: #4b5563 #1f2937; /* thumb track */
     }
   </style>
+
+<link rel="stylesheet" href="/index.css">
 <script type="importmap">
 {
   "imports": {
@@ -44,21 +46,9 @@
   }
 }
 </script>
-  <script>
-    window.Babel = {
-      presets: [
-        // Ensure preset-env doesn't transform ES modules to CommonJS.
-        // The browser's module system (with import maps) will handle them.
-        ['env', { modules: false }],
-        'react',
-        'typescript'
-      ]
-    };
-  </script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script type="module" crossorigin src="./assets/index-CDrhWe6i.js"></script>
 </head>
 <body class="bg-gray-900 text-white">
   <div id="root"></div>
-  <script type="text/babel" data-type="module" src="./index.tsx"></script>
 </body>
 </html>
