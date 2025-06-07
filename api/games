@@ -1,23 +1,30 @@
 [
-	{
-        "path": "games/StoryBook/index.html"
-    },
-    {
-        "path": "games/Tetris/index.html"
-    },
-    {
-        "path": "games/SolarSys/index.html"
-    },
-    {
-        "path": "games/Spaceshoot/index.html"
-    },
-    {
-        "path": "games/TowerBuilding/index.html"
-    },
-    {
-        "path": "games/TowerDefense/index.html"
-    },
-    {
-        "path": "games/Unity/ARTest/index.html"
-    }
+  {
+    "id": 0,
+    "path": "games/BattleTank/index.html"
+  },
+  {
+    "id": 1,
+    "path": "games/SolarSys/index.html"
+  },
+  {
+    "id": 2,
+    "path": "games/Spaceshoot/index.html"
+  },
+  {
+    "id": 3,
+    "path": "games/StoryBook/index.html"
+  },
+  {
+    "id": 4,
+    "path": "games/Tetris/index.html"
+  },
+  {
+    "id": 5,
+    "path": "games/TowerBuilding/index.html"
+  },
+  {
+    "id": 6,
+    "path": "games/TowerDefense/index.html"
+  }
 ]

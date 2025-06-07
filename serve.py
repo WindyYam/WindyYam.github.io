@@ -4,8 +4,15 @@ import os
 import json
 import threading
 import ssl
+import mimetypes
 
 PORT = 8443  # Standard HTTPS port
+# Add correct MIME types before starting server
+mimetypes.add_type('application/javascript', '.js')
+mimetypes.add_type('application/javascript', '.tsx')
+mimetypes.add_type('application/javascript', '.ts')
+mimetypes.add_type('application/javascript', '.mjs')
+mimetypes.add_type('application/wasm', '.wasm')
 
 class ThreadedHTTPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     """Handle requests in a separate thread."""
